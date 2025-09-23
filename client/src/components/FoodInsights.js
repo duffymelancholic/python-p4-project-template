@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useI18n } from "../contexts/LanguageContext";
 
 function FoodInsights() {
+  const { t } = useI18n();
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,26 +32,26 @@ function FoodInsights() {
 
   return (
     <div style={{ padding: 16 }}>
-      <h2>Kenyan Food Insights</h2>
+      <h2>{t("foods_title")}</h2>
       <div style={{ marginBottom: 12 }}>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search foods e.g. Ugali, Githeri"
+          placeholder={t("foods_search_placeholder")}
           style={{ padding: 8, width: 320 }}
         />
       </div>
-      {loading && <p>Loading...</p>}
+      {loading && <p>{t("loading")}</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
-      {!loading && !hasResults && <p>No foods found.</p>}
+      {!loading && !hasResults && <p>{t("no_results")}</p>}
       {hasResults && (
         <table style={{ borderCollapse: "collapse", width: "100%" }}>
           <thead>
             <tr>
-              <th style={{ textAlign: "left", borderBottom: "1px solid #ddd", padding: 8 }}>Food</th>
-              <th style={{ textAlign: "right", borderBottom: "1px solid #ddd", padding: 8 }}>Carbs (g)</th>
-              <th style={{ textAlign: "right", borderBottom: "1px solid #ddd", padding: 8 }}>GI</th>
-              <th style={{ textAlign: "right", borderBottom: "1px solid #ddd", padding: 8 }}>Serving (g)</th>
+              <th style={{ textAlign: "left", borderBottom: "1px solid #ddd", padding: 8 }}>{t("food")}</th>
+              <th style={{ textAlign: "right", borderBottom: "1px solid #ddd", padding: 8 }}>{t("carbs")}</th>
+              <th style={{ textAlign: "right", borderBottom: "1px solid #ddd", padding: 8 }}>{t("gi")}</th>
+              <th style={{ textAlign: "right", borderBottom: "1px solid #ddd", padding: 8 }}>{t("serving")}</th>
             </tr>
           </thead>
           <tbody>

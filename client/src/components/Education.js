@@ -1,9 +1,11 @@
 import React from "react";
+import { useI18n } from "../contexts/LanguageContext";
 
 function Education() {
+  const { t } = useI18n();
   return (
     <div style={{ padding: 16 }}>
-      <h2>Diabetes Education</h2>
+      <h2>{t("education_title")}</h2>
       <ul>
         <li>Understanding Type 2 Diabetes</li>
         <li>Glycemic Index in Kenyan Foods</li>

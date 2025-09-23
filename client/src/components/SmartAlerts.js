@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
+import { useI18n } from "../contexts/LanguageContext";
 
 function SmartAlerts() {
+  const { t } = useI18n();
   const [recent, setRecent] = useState("120, 135, 142");
   const [carbs, setCarbs] = useState("45");
   const [gi, setGi] = useState("55");
@@ -48,10 +50,10 @@ function SmartAlerts() {
 
   return (
     <div style={{ padding: 16 }}>
-      <h2>Smart Alerts & Prediction</h2>
+      <h2>{t("alerts_title")}</h2>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, maxWidth: 720 }}>
         <label>
-          Recent Readings (mg/dL)
+          {t("recent_readings")}
           <input
             style={{ display: "block", padding: 8, width: "100%" }}
             value={recent}
@@ -60,7 +62,7 @@ function SmartAlerts() {
           />
         </label>
         <label>
-          Food Carbs (g)
+          {t("food_carbs")}
           <input
             style={{ display: "block", padding: 8, width: "100%" }}
             value={carbs}
@@ -70,7 +72,7 @@ function SmartAlerts() {
           />
         </label>
         <label>
-          Food GI
+          {t("food_gi")}
           <input
             style={{ display: "block", padding: 8, width: "100%" }}
             value={gi}
@@ -83,17 +85,17 @@ function SmartAlerts() {
       </div>
       <div style={{ marginTop: 12 }}>
         <button onClick={predict} disabled={loading}>
-          {loading ? "Predicting..." : "Predict"}
+          {loading ? t("predicting") : t("predict")}
         </button>
       </div>
       {error && <p style={{ color: "red" }}>{error}</p>}
       {result && (
         <div style={{ marginTop: 16, padding: 12, border: "1px solid #ddd" }}>
           <p>
-            Predicted Glucose: <strong>{result.predicted_glucose} mg/dL</strong>
+            {t("predicted_glucose")}: <strong>{result.predicted_glucose} mg/dL</strong>
           </p>
           <p>
-            Risk: <span style={{ color: riskColor(result.risk), fontWeight: 700 }}>{result.risk}</span>
+            {t("risk")}: <span style={{ color: riskColor(result.risk), fontWeight: 700 }}>{result.risk}</span>
           </p>
         </div>
       )}

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { useI18n } from "../contexts/LanguageContext";
 
 function Gamification() {
+  const { t } = useI18n();
   const [userId, setUserId] = useState("1");
   const [points, setPoints] = useState(0);
   const [badges, setBadges] = useState([]);
@@ -43,24 +45,24 @@ function Gamification() {
 
   return (
     <div style={{ padding: 16 }}>
-      <h2>Gamification</h2>
+      <h2>{t("gamification_title")}</h2>
       <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
         <label>
-          User ID
+          {t("user_id")}
           <input value={userId} onChange={(e) => setUserId(e.target.value)} style={{ marginLeft: 8, padding: 6 }} />
         </label>
-        <button onClick={load} disabled={loading}>Refresh</button>
+        <button onClick={load} disabled={loading}>{t("refresh")}</button>
       </div>
       <div style={{ marginTop: 12 }}>
-        <p>Points: <strong>{points}</strong></p>
-        <p>Badges: {badges.length ? badges.join(", ") : "None"}</p>
+        <p>{t("points")}: <strong>{points}</strong></p>
+        <p>{t("badges")}: {badges.length ? badges.join(", ") : "None"}</p>
       </div>
       <div style={{ marginTop: 12 }}>
         <label>
-          Add Points
+          {t("add_points")}
           <input type="number" value={delta} onChange={(e) => setDelta(Number(e.target.value))} style={{ marginLeft: 8, padding: 6 }} />
         </label>
-        <button onClick={addPoints} disabled={loading} style={{ marginLeft: 8 }}>Add</button>
+        <button onClick={addPoints} disabled={loading} style={{ marginLeft: 8 }}>{t("add")}</button>
       </div>
       {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
