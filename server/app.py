@@ -15,6 +15,7 @@ from schemas import UserSchema, ReadingSchema, MedicationSchema, MealSchema, Doc
 from kenyan_foods import KENYAN_FOODS, get_food_recommendations, get_diabetes_friendly_foods, get_foods_to_limit, Foods, Food
 from glucose_predictor import analyze_user_patterns, generate_predictive_alerts, get_meal_specific_predictions, get_food_impact_prediction, GlucosePredict
 from gamification import BADGES, DAILY_CHALLENGES, get_user_progress, check_badges, get_daily_challenges_status, Points, Badges
+from emergency_response import get_kenyan_emergency_system, EmergencyType, EmergencyPriority
 
 
 # ---------------- Authentication ----------------
@@ -666,3 +667,177 @@ class FoodImpactPredictor(Resource):
 api.add_resource(GlucoseAlerts, '/glucose-alerts')
 api.add_resource(MealPrediction, '/meal-prediction')
 api.add_resource(FoodImpactPredictor, '/food-impact')
+
+# ---------------- Emergency Response System ----------------
+class EmergencyProtocols(Resource):
+    def get(self):
+        """Get all emergency protocols"""
+        emergency_system = get_kenyan_emergency_system()
+        protocols = {}
+        for emergency_type, protocol in emergency_system.emergency_protocols.items():
+            protocols[emergency_type.value] = {
+                'emergency_type': emergency_type.value,
+                'priority': protocol.priority.value,
+                'immediate_actions': {
+                    'english': protocol.immediate_actions_english,
+                    'swahili': protocol.immediate_actions_swahili
+                },
+                'warning_signs': {
+                    'english': protocol.warning_signs_english,
+                    'swahili': protocol.warning_signs_swahili
+                },
+                'when_to_call_999': protocol.when_to_call_999,
+                'when_to_call_doctor': protocol.when_to_call_doctor,
+                'prevention_tips': {
+                    'english': protocol.prevention_tips_english,
+                    'swahili': protocol.prevention_tips_swahili
+                }
+            }
+        return {'protocols': protocols}, 200
+
+class EmergencyResponse(Resource):
+    @jwt_required()
+    def post(self):
+        """Trigger emergency response"""
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        if not data:
+            return {'error': 'Request data required'}, 400
+            
+        # Get emergency parameters
+        emergency_type_str = data.get('emergency_type', 'general_emergency')
+        severity_level = data.get('severity_level', 5)
+        user_location = data.get('location')  # [lat, lon]
+        
+        try:
+            emergency_type = EmergencyType(emergency_type_str)
+        except ValueError:
+            emergency_type = EmergencyType.GENERAL_EMERGENCY
+            
+        # Convert location to tuple if provided
+        location_tuple = None
+        if user_location and len(user_location) == 2:
+            location_tuple = (float(user_location[0]), float(user_location[1]))
+            
+        emergency_system = get_kenyan_emergency_system()
+        
+        # Trigger emergency response
+        response = emergency_system.trigger_emergency_response(
+            user_id=str(user_id),
+            emergency_type=emergency_type,
+            severity_level=severity_level,
+            user_location=location_tuple
+        )
+        
+        # Convert response to serializable format
+        return {
+            'emergency_id': response.emergency_id,
+            'emergency_type': response.emergency_type.value,
+            'severity_level': response.severity_level,
+            'timestamp': response.timestamp.isoformat(),
+            'nearest_hospitals': [{
+                'name': h.name,
+                'location': h.location,
+                'phone': h.phone_number,
+                'emergency_phone': h.emergency_phone,
+                'has_diabetes_specialist': h.has_diabetes_specialist,
+                'coordinates': h.coordinates
+            } for h in response.nearest_hospitals],
+            'protocol': {
+                'priority': response.protocol_followed.priority.value,
+                'immediate_actions_english': response.protocol_followed.immediate_actions_english,
+                'immediate_actions_swahili': response.protocol_followed.immediate_actions_swahili,
+                'when_to_call_999': response.protocol_followed.when_to_call_999
+            },
+            'emergency_numbers': emergency_system.get_emergency_numbers()
+        }, 201
+
+class EmergencyAssessment(Resource):
+    @jwt_required()
+    def post(self):
+        """Assess emergency severity based on symptoms"""
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        if not data:
+            return {'error': 'Symptoms data required'}, 400
+            
+        emergency_system = get_kenyan_emergency_system()
+        emergency_type, severity = emergency_system.assess_emergency_severity(data)
+        
+        protocol = emergency_system.get_emergency_protocol(emergency_type)
+        
+        return {
+            'emergency_type': emergency_type.value,
+            'severity_level': severity,
+            'recommended_action': 'Call 999 immediately' if severity >= 8 else 'Seek medical attention',
+            'protocol': {
+                'priority': protocol.priority.value if protocol else 'medium',
+                'immediate_actions_english': protocol.immediate_actions_english if protocol else [],
+                'immediate_actions_swahili': protocol.immediate_actions_swahili if protocol else []
+            }
+        }, 200
+
+class EmergencyNumbers(Resource):
+    def get(self):
+        """Get Kenyan emergency contact numbers"""
+        emergency_system = get_kenyan_emergency_system()
+        return {
+            'emergency_numbers': emergency_system.get_emergency_numbers(),
+            'country': 'Kenya',
+            'instructions': {
+                'english': 'Call 999 for any life-threatening emergency',
+                'swahili': 'Piga 999 kwa dharura yoyote ya hatari ya maisha'
+            }
+        }, 200
+
+class NearestHospitals(Resource):
+    def post(self):
+        """Find nearest hospitals to given location"""
+        data = request.get_json()
+        
+        if not data or 'location' not in data:
+            return {'error': 'Location [latitude, longitude] required'}, 400
+            
+        location = data['location']
+        if not isinstance(location, list) or len(location) != 2:
+            return {'error': 'Location must be [latitude, longitude] array'}, 400
+            
+        max_distance = data.get('max_distance_km', 50)
+        
+        emergency_system = get_kenyan_emergency_system()
+        hospitals_with_distance = emergency_system.find_nearest_hospitals(
+            float(location[0]), float(location[1]), max_distance
+        )
+        
+        hospitals = []
+        for hospital, distance in hospitals_with_distance:
+            hospitals.append({
+                'name': hospital.name,
+                'location': hospital.location,
+                'county': hospital.county,
+                'distance_km': round(distance, 2),
+                'phone': hospital.phone_number,
+                'emergency_phone': hospital.emergency_phone,
+                'has_diabetes_specialist': hospital.has_diabetes_specialist,
+                'has_icu': hospital.has_icu,
+                'has_emergency_room': hospital.has_emergency_room,
+                'nhif_accredited': hospital.nhif_accredited,
+                'estimated_response_time_minutes': hospital.estimated_response_time_minutes,
+                'languages_supported': hospital.languages_supported,
+                'coordinates': hospital.coordinates
+            })
+            
+        return {
+            'nearest_hospitals': hospitals,
+            'search_location': location,
+            'max_distance_km': max_distance
+        }, 200
+
+# Register emergency response endpoints
+api.add_resource(EmergencyProtocols, '/emergency/protocols')
+api.add_resource(EmergencyResponse, '/emergency/trigger')
+api.add_resource(EmergencyAssessment, '/emergency/assess')
+api.add_resource(EmergencyNumbers, '/emergency/numbers')
+api.add_resource(NearestHospitals, '/emergency/hospitals')
