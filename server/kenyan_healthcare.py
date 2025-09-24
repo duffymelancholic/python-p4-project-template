@@ -140,7 +140,7 @@ class KenyanHealthcareSystem:
                     ServiceType.LABORATORY_SERVICES,
                     ServiceType.PHARMACY_SERVICES
                 ],
-                nhif_accredited=True,
+                shif_accredited=True,
                 operating_hours={
                     "monday": "24 hours",
                     "tuesday": "24 hours", 
@@ -179,7 +179,7 @@ class KenyanHealthcareSystem:
                     ServiceType.EMERGENCY_SERVICES,
                     ServiceType.OUTPATIENT
                 ],
-                nhif_accredited=True,
+                shif_accredited=True,
                 operating_hours={
                     "monday": "24 hours",
                     "tuesday": "24 hours",
@@ -217,7 +217,7 @@ class KenyanHealthcareSystem:
                     ServiceType.LABORATORY_SERVICES,
                     ServiceType.EMERGENCY_SERVICES
                 ],
-                nhif_accredited=True,
+                shif_accredited=True,
                 operating_hours={
                     "monday": "24 hours",
                     "tuesday": "24 hours",
@@ -255,7 +255,7 @@ class KenyanHealthcareSystem:
                     ServiceType.OUTPATIENT,
                     ServiceType.EMERGENCY_SERVICES
                 ],
-                nhif_accredited=True,
+                shif_accredited=True,
                 operating_hours={
                     "monday": "7:00 AM - 5:00 PM",
                     "tuesday": "7:00 AM - 5:00 PM",
@@ -278,7 +278,7 @@ class KenyanHealthcareSystem:
     def _initialize_nhif_services(self) -> List[NHIFService]:
         """Initialize NHIF covered services for diabetes care"""
         return [
-            NHIFService(
+            SHIFService(
                 service_code="DIAB001",
                 service_name="Diabetes Consultation",
                 service_name_swahili="Ushauri wa Kisukari",
@@ -289,7 +289,7 @@ class KenyanHealthcareSystem:
                 diabetes_related=True
             ),
             
-            NHIFService(
+            SHIFService(
                 service_code="LAB001",
                 service_name="Blood Glucose Test",
                 service_name_swahili="Upimaji wa Sukari ya Damu",
@@ -300,7 +300,7 @@ class KenyanHealthcareSystem:
                 diabetes_related=True
             ),
             
-            NHIFService(
+            SHIFService(
                 service_code="LAB002", 
                 service_name="HbA1c Test",
                 service_name_swahili="Upimaji wa HbA1c",
@@ -311,7 +311,7 @@ class KenyanHealthcareSystem:
                 diabetes_related=True
             ),
             
-            NHIFService(
+            SHIFService(
                 service_code="NUTR001",
                 service_name="Nutrition Counseling",
                 service_name_swahili="Ushauri wa Lishe",
@@ -322,7 +322,7 @@ class KenyanHealthcareSystem:
                 diabetes_related=True
             ),
             
-            NHIFService(
+            SHIFService(
                 service_code="PHARM001",
                 service_name="Diabetes Medications",
                 service_name_swahili="Dawa za Kisukari",
@@ -333,7 +333,7 @@ class KenyanHealthcareSystem:
                 diabetes_related=True
             ),
             
-            NHIFService(
+            SHIFService(
                 service_code="FOOT001",
                 service_name="Diabetic Foot Care",
                 service_name_swahili="Utunzaji wa Miguu ya Kisukari",
@@ -413,7 +413,7 @@ class KenyanHealthcareSystem:
         return facilities
     
     def find_nhif_accredited_facilities(self, county: str = None) -> List[HealthFacility]:
-        """Find NHIF accredited facilities"""
+        """Find SHIF accredited facilities"""
         facilities = [f for f in self.health_facilities if f.nhif_accredited]
         
         if county:
@@ -421,12 +421,12 @@ class KenyanHealthcareSystem:
         
         return facilities
     
-    def get_nhif_diabetes_services(self) -> List[NHIFService]:
-        """Get NHIF covered diabetes-related services"""
+    def get_shif_diabetes_services(self) -> List[NHIFService]:
+        """Get SHIF covered diabetes-related services"""
         return [service for service in self.nhif_services if service.diabetes_related]
     
     def calculate_nhif_coverage(self, service_codes: List[str]) -> Dict[str, float]:
-        """Calculate NHIF coverage for given services"""
+        """Calculate SHIF coverage for given services"""
         total_covered = 0.0
         total_copay = 0.0
         

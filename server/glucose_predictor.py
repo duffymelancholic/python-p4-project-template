@@ -1,5 +1,5 @@
 """
-Glucose Predictor - AI-powered glucose level prediction system
+AI-powered glucose level prediction system
 for Kenyan foods and personalized health insights.
 """
 

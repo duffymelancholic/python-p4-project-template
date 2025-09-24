@@ -1,5 +1,5 @@
 """
-Kenyan Food Database - Comprehensive database of traditional Kenyan foods
+Comprehensive database of traditional Kenyan foods
 with nutritional information and health insights for diabetes management.
 """
 
