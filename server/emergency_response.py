@@ -1,6 +1,4 @@
-"""
-Emergency Response System for Kenyan Health App
-Provides critical emergency services integration, location-based hospital finder,
+"""Provides critical emergency services integration, location-based hospital finder,
 and emergency contact cascade system for diabetes emergencies.
 """
 
