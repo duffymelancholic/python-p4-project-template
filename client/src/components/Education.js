@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useI18n } from "../contexts/LanguageContext";
 
 const Education = () => {
+  const { t } = useI18n();
+
   const [modules, setModules] = useState([]);
   const [selectedModule, setSelectedModule] = useState(null);
   const [userProgress, setUserProgress] = useState({});
@@ -142,7 +145,6 @@ const Education = () => {
   ];
 
   useEffect(() => {
-    // Simulate loading modules
     setTimeout(() => {
       setModules(mockModules);
       setUserProgress({
@@ -186,7 +188,6 @@ const Education = () => {
     ));
     setSelectedModule(null);
     
-    // Update user progress
     const updatedModules = modules.map(module => 
       module.id === moduleId 
         ? { ...module, completed: true, progress: 100 }
@@ -203,7 +204,7 @@ const Education = () => {
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1>📚 Health Education</h1>
+        <h1>{t("education_title") || "📚 Health Education"}</h1>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
             onClick={() => setLanguage('english')}
@@ -244,25 +245,25 @@ const Education = () => {
             marginBottom: '30px',
             textAlign: 'center'
           }}>
-            <h3>Your Learning Progress</h3>
+            <h3>{t("learning_progress") || "Your Learning Progress"}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', marginTop: '15px' }}>
               <div>
                 <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#2196F3' }}>
                   {userProgress.totalProgress}%
                 </div>
-                <div>Overall Progress</div>
+                <div>{t("overall_progress") || "Overall Progress"}</div>
               </div>
               <div>
                 <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#4CAF50' }}>
                   {userProgress.completedModules}
                 </div>
-                <div>Completed Modules</div>
+                <div>{t("completed_modules") || "Completed Modules"}</div>
               </div>
               <div>
                 <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#FF9800' }}>
                   {userProgress.totalModules - userProgress.completedModules}
                 </div>
-                <div>Remaining</div>
+                <div>{t("remaining") || "Remaining"}</div>
               </div>
             </div>
           </div>
@@ -310,7 +311,7 @@ const Education = () => {
                     borderRadius: '12px',
                     fontSize: '12px'
                   }}>
-                    ✓ Completed
+                    ✓ {t("completed") || "Completed"}
                   </div>
                 )}
 
@@ -346,7 +347,7 @@ const Education = () => {
                 {/* Progress Bar */}
                 <div style={{ marginBottom: '15px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                    <span style={{ fontSize: '14px' }}>Progress</span>
+                    <span style={{ fontSize: '14px' }}>{t("progress") || "Progress"}</span>
                     <span style={{ fontSize: '14px' }}>{module.progress}%</span>
                   </div>
                   <div style={{
@@ -378,7 +379,11 @@ const Education = () => {
                     fontSize: '16px'
                   }}
                 >
-                  {module.completed ? 'Review Module' : module.progress > 0 ? 'Continue' : 'Start Module'}
+                  {module.completed 
+                    ? t("review_module") || "Review Module" 
+                    : module.progress > 0 
+                      ? t("continue") || "Continue" 
+                      : t("start_module") || "Start Module"}
                 </button>
               </div>
             ))}
@@ -399,7 +404,7 @@ const Education = () => {
               marginBottom: '20px'
             }}
           >
-            ← Back to Modules
+            ← {t("back_to_modules") || "Back to Modules"}
           </button>
 
           <div style={{
@@ -455,13 +460,26 @@ const Education = () => {
                     fontSize: '16px'
                   }}
                 >
-                  Mark as Complete
+                  {t("mark_complete") || "Mark as Complete"}
                 </button>
               )}
             </div>
           </div>
         </div>
       )}
+
+      {/* Extra static content from Nick’s version */}
+      <div style={{ marginTop: '40px', padding: 16 }}>
+        <h2>{t("education_title")}</h2>
+        <ul>
+          <li>Understanding Type 2 Diabetes</li>
+          <li>Glycemic Index in Kenyan Foods</li>
+          <li>Monitoring Blood Glucose</li>
+          <li>Physical Activity Tips</li>
+          <li>Hypoglycemia and Hyperglycemia Safety</li>
+        </ul>
+        <p>{t("more_interactive") || "More interactive modules can be added here."}</p>
+      </div>
     </div>
   );
 };

@@ -2,6 +2,7 @@
 """
 Kenyan Food Database with nutritional information
 Focused on common foods and their impact on blood glucose
+Supports both in-memory models and SQLAlchemy persistence
 """
 
 # -----------------------
@@ -10,83 +11,88 @@ Focused on common foods and their impact on blood glucose
 
 # Kenyan foods with nutritional data (per 100g serving)
 KENYAN_FOODS = {
-    'ugali': {
-        'name_en': 'Ugali',
-        'name_sw': 'Ugali',
-        'category': 'staple',
-        'calories': 112,
-        'carbs': 24.0,  # High carb - will spike glucose
-        'fiber': 1.2,
-        'protein': 2.4,
-        'fat': 0.4,
-        'glycemic_index': 85,  # High GI
-        'glucose_impact': 'high',
-        'diabetes_tips': {
-            'en': [
-                'Eat smaller portions (1/2 cup instead of 1 cup)',
-                'Pair with sukuma wiki or other vegetables',
-                'Choose whole grain ugali when possible',
-                'Monitor blood sugar 2 hours after eating'
+    "ugali": {
+        "name_en": "Ugali",
+        "name_sw": "Ugali",
+        "category": "staple",
+        "calories": 112,
+        "carbs": 24.0,
+        "fiber": 1.2,
+        "protein": 2.4,
+        "fat": 0.4,
+        "glycemic_index": 85,
+        "glucose_impact": "high",
+        "diabetes_tips": {
+            "en": [
+                "Eat smaller portions (1/2 cup instead of 1 cup)",
+                "Pair with sukuma wiki or other vegetables",
+                "Choose whole grain ugali when possible",
+                "Monitor blood sugar 2 hours after eating",
             ],
-            'sw': [
-                'Kula kipimo kidogo (kikombe 1/2 badala ya 1)',
-                'Changanya na sukuma wiki au mboga zingine',
-                'Chagua ugali wa nafaka nzima ikiwezekana',
-                'Fuatilia sukari ya damu masaa 2 baada ya kula'
-            ]
-        }
+            "sw": [
+                "Kula kipimo kidogo (kikombe 1/2 badala ya 1)",
+                "Changanya na sukuma wiki au mboga zingine",
+                "Chagua ugali wa nafaka nzima ikiwezekana",
+                "Fuatilia sukari ya damu masaa 2 baada ya kula",
+            ],
+        },
     },
-    # ... other foods omitted for brevity ...
+    # ... add more foods ...
 }
+
 
 def get_food_by_name(name):
     """Get food data by name (English or Swahili)"""
-    name_lower = name.lower().replace(' ', '_')
+    name_lower = name.lower().replace(" ", "_")
     return KENYAN_FOODS.get(name_lower)
+
 
 def get_foods_by_glucose_impact(impact_level):
     """Get foods by glucose impact level: low, medium, high, very_high, none"""
-    return {k: v for k, v in KENYAN_FOODS.items() if v['glucose_impact'] == impact_level}
+    return {k: v for k, v in KENYAN_FOODS.items() if v["glucose_impact"] == impact_level}
+
 
 def get_diabetes_friendly_foods():
     """Get foods with low glucose impact"""
-    return get_foods_by_glucose_impact('low') | get_foods_by_glucose_impact('none')
+    return get_foods_by_glucose_impact("low") | get_foods_by_glucose_impact("none")
+
 
 def get_foods_to_limit():
     """Get foods with high glucose impact"""
-    return get_foods_by_glucose_impact('high') | get_foods_by_glucose_impact('very_high')
+    return get_foods_by_glucose_impact("high") | get_foods_by_glucose_impact("very_high")
 
-def get_food_recommendations(diabetes_type, language='en'):
+
+def get_food_recommendations(diabetes_type, language="en"):
     """Get personalized food recommendations based on diabetes type"""
     recommendations = {
-        'type1': {
-            'en': [
-                'Focus on carb counting with ugali and chapati',
-                'Sukuma wiki and terere are excellent choices',
-                'Time insulin with high-carb foods like githeri',
-                'Nyama choma provides protein without affecting blood sugar'
+        "type1": {
+            "en": [
+                "Focus on carb counting with ugali and chapati",
+                "Sukuma wiki and terere are excellent choices",
+                "Time insulin with high-carb foods like githeri",
+                "Nyama choma provides protein without affecting blood sugar",
             ],
-            'sw': [
-                'Zingatia kuhesabu kabohaidreti na ugali na chapati',
-                'Sukuma wiki na terere ni chaguo bora',
-                'Panga insulini na chakula chenye kabohaidreti nyingi kama githeri',
-                'Nyama choma inatoa protini bila kuathiri sukari ya damu'
-            ]
+            "sw": [
+                "Zingatia kuhesabu kabohaidreti na ugali na chapati",
+                "Sukuma wiki na terere ni chaguo bora",
+                "Panga insulini na chakula chenye kabohaidreti nyingi kama githeri",
+                "Nyama choma inatoa protini bila kuathiri sukari ya damu",
+            ],
         },
-        'type2': {
-            'en': [
-                'Limit ugali and chapati portions',
-                'Fill half your plate with sukuma wiki and terere',
-                'Choose githeri over ugali for better blood sugar control',
-                'Avoid mandazi and other fried foods'
+        "type2": {
+            "en": [
+                "Limit ugali and chapati portions",
+                "Fill half your plate with sukuma wiki and terere",
+                "Choose githeri over ugali for better blood sugar control",
+                "Avoid mandazi and other fried foods",
             ],
-            'sw': [
-                'Punguza vipimo vya ugali na chapati',
-                'Jaza nusu ya sahani yako na sukuma wiki na terere',
-                'Chagua githeri badala ya ugali kwa kudhibiti sukari vizuri',
-                'Epuka mandazi na vyakula vingine vya kukaanga'
-            ]
-        }
+            "sw": [
+                "Punguza vipimo vya ugali na chapati",
+                "Jaza nusu ya sahani yako na sukuma wiki na terere",
+                "Chagua githeri badala ya ugali kwa kudhibiti sukari vizuri",
+                "Epuka mandazi na vyakula vingine vya kukaanga",
+            ],
+        },
     }
     return recommendations.get(diabetes_type, {}).get(language, [])
 
@@ -95,15 +101,11 @@ def get_food_recommendations(diabetes_type, language='en'):
 # CLASS-BASED MODEL
 # -----------------------
 
-"""
-Comprehensive database of traditional Kenyan foods
-with nutritional information and health insights for diabetes management.
-"""
-
 import json
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, asdict
+from typing import List, Optional
+from dataclasses import dataclass
 from enum import Enum
+
 
 class FoodCategory(Enum):
     STAPLES = "staples"
@@ -114,10 +116,12 @@ class FoodCategory(Enum):
     SNACKS = "snacks"
     TRADITIONAL = "traditional"
 
+
 class GlycemicIndex(Enum):
-    LOW = "low"       # GI < 55
-    MEDIUM = "medium" # GI 55-70
-    HIGH = "high"     # GI > 70
+    LOW = "low"  # GI < 55
+    MEDIUM = "medium"  # GI 55-70
+    HIGH = "high"  # GI > 70
+
 
 @dataclass
 class NutritionalInfo:
@@ -130,6 +134,7 @@ class NutritionalInfo:
     sodium_mg: float
     glycemic_index: int
     glycemic_load: float
+
 
 @dataclass
 class KenyanFood:
@@ -149,19 +154,53 @@ class KenyanFood:
     seasonal_availability: List[str]
     regions: List[str]
 
+
 class KenyanFoodDatabase:
     """Comprehensive database of Kenyan foods with health insights"""
-    
+
     def __init__(self):
-        self.foods = self._initialize_database()
+        self.foods: List[KenyanFood] = self._initialize_database()
         self.food_index = {food.id: food for food in self.foods}
         self.name_index = self._create_name_index()
-    
-    # ... (full class definition continues unchanged) ...
+
+    def _initialize_database(self) -> List[KenyanFood]:
+        # TODO: populate with full structured foods
+        return []
+
+    def _create_name_index(self):
+        index = {}
+        for food in self.foods:
+            index[food.name_english.lower()] = food
+            index[food.name_swahili.lower()] = food
+        return index
+
+    def get_food(self, name: str) -> Optional[KenyanFood]:
+        return self.name_index.get(name.lower())
+
 
 # Global instance
 kenyan_food_db = KenyanFoodDatabase()
 
 def get_kenyan_food_database() -> KenyanFoodDatabase:
-    """Get the global Kenyan food database instance"""
     return kenyan_food_db
+
+
+# -----------------------
+# SQLALCHEMY MODEL (Nick’s)
+# -----------------------
+
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy_serializer import SerializerMixin
+
+db = SQLAlchemy()
+
+class Food(db.Model, SerializerMixin):
+    __tablename__ = "foods"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False, unique=True)
+    carbs = db.Column(db.Integer, nullable=False, default=0)
+    gi = db.Column(db.Integer, nullable=False, default=0)
+    serving_grams = db.Column(db.Integer, nullable=False, default=0)
+
+    serialize_rules = ("-metadata",)

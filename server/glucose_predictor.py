@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
 Glucose Prediction and Alert System
-Analyzes user patterns to provide predictive alerts
+Analyzes user patterns, food impacts, and provides predictive alerts.
 """
 
 from datetime import datetime, timedelta
 from collections import defaultdict
 import statistics
 from kenyan_foods import KENYAN_FOODS
+
+# ---------------- Pattern Analysis & Alerts ----------------
 
 def analyze_user_patterns(readings):
     """Analyze user's glucose patterns from reading history"""
@@ -23,7 +25,6 @@ def analyze_user_patterns(readings):
         'recent_trend': 'stable'
     }
     
-    # Categorize readings
     for reading in readings:
         value = reading.value
         context = reading.context
@@ -36,7 +37,7 @@ def analyze_user_patterns(readings):
         
         patterns['time_patterns'][hour].append(value)
         
-        # Count problematic readings
+        # Count highs/lows
         if context == 'pre_meal' and value > 130:
             patterns['high_readings_count'] += 1
         elif context == 'post_meal' and value > 180:
@@ -44,13 +45,12 @@ def analyze_user_patterns(readings):
         elif value < 80:
             patterns['low_readings_count'] += 1
     
-    # Calculate averages
     if patterns['avg_pre_meal']:
         patterns['avg_pre_meal'] = statistics.mean(patterns['avg_pre_meal'])
     if patterns['avg_post_meal']:
         patterns['avg_post_meal'] = statistics.mean(patterns['avg_post_meal'])
     
-    # Determine recent trend (last 5 readings)
+    # Trend check
     recent_values = [r.value for r in readings[-5:]]
     if len(recent_values) >= 3:
         if recent_values[-1] > recent_values[0] + 20:
@@ -60,6 +60,7 @@ def analyze_user_patterns(readings):
     
     return patterns
 
+
 def generate_predictive_alerts(user, patterns, language='en'):
     """Generate personalized alerts based on patterns"""
     if not patterns:
@@ -67,7 +68,7 @@ def generate_predictive_alerts(user, patterns, language='en'):
     
     alerts = []
     
-    # High glucose pattern alert
+    # High glucose
     if patterns['high_readings_count'] > len(patterns.get('avg_pre_meal', [])) * 0.4:
         alerts.append({
             'type': 'pattern_warning',
@@ -96,139 +97,80 @@ def generate_predictive_alerts(user, patterns, language='en'):
             }
         })
     
-    # Rising trend alert
+    # Rising trend
     if patterns['recent_trend'] == 'rising':
         alerts.append({
             'type': 'trend_warning',
             'severity': 'medium',
-            'title': {
-                'en': 'Rising Glucose Trend',
-                'sw': 'Mwelekeo wa Sukari ya Damu Kuongezeka'
-            },
+            'title': {'en': 'Rising Glucose Trend', 'sw': 'Mwelekeo wa Sukari ya Damu Kuongezeka'},
             'message': {
                 'en': 'Your recent readings show an upward trend. Time to take action!',
-                'sw': 'Vipimo vyako vya hivi karibuni vinaonyesha mwelekeo wa kuongezeka. Ni wakati wa kuchukua hatua!'
-            },
-            'recommendations': {
-                'en': [
-                    "Review what you've eaten in the last few days",
-                    'Increase physical activity',
-                    'Consider smaller, more frequent meals',
-                    'Stay hydrated with water'
-                ],
-                'sw': [
-                    'Angalia ulichokula katika siku chache zilizopita',
-                    'Ongeza mazoezi ya mwili',
-                    'Fikiria chakula kidogo, mara nyingi',
-                    'Kunywa maji mengi'
-                ]
+                'sw': 'Vipimo vyako vinaonyesha mwelekeo wa kuongezeka. Ni wakati wa kuchukua hatua!'
             }
         })
     
-    # Time-based pattern alert
+    # Morning highs
     morning_avg = statistics.mean(patterns['time_patterns'].get(8, [100])) if patterns['time_patterns'].get(8) else None
     if morning_avg and morning_avg > 140:
         alerts.append({
             'type': 'time_pattern',
             'severity': 'medium',
-            'title': {
-                'en': 'High Morning Glucose',
-                'sw': 'Sukari ya Damu ya Juu Asubuhi'
-            },
+            'title': {'en': 'High Morning Glucose', 'sw': 'Sukari ya Damu ya Juu Asubuhi'},
             'message': {
-                'en': f'Your morning readings average {morning_avg:.1f} mg/dL, which is above target.',
-                'sw': f'Vipimo vyako vya asubuhi ni wastani wa {morning_avg:.1f} mg/dL, ambayo ni juu ya lengo.'
-            },
-            'recommendations': {
-                'en': [
-                    'Avoid late-night snacking',
-                    'Consider what you ate for dinner last night',
-                    'Try light exercise before breakfast',
-                    'Discuss with your doctor about dawn phenomenon'
-                ],
-                'sw': [
-                    'Epuka kula chakula kidogo usiku wa manane',
-                    'Fikiria ulichokula chakula cha jioni jana',
-                    'Jaribu mazoezi mepesi kabla ya kifungua kinywa',
-                    'Jadili na daktari wako kuhusu hali ya alfajiri'
-                ]
+                'en': f'Morning average {morning_avg:.1f} mg/dL, above target.',
+                'sw': f'Wastani wa asubuhi {morning_avg:.1f} mg/dL, juu ya lengo.'
             }
         })
     
-    # Low glucose pattern
+    # Frequent lows
     if patterns['low_readings_count'] > 2:
         alerts.append({
             'type': 'low_glucose_warning',
             'severity': 'high',
-            'title': {
-                'en': 'Frequent Low Glucose Episodes',
-                'sw': 'Sukari ya Damu ya Chini Mara Nyingi'
-            },
+            'title': {'en': 'Frequent Low Glucose Episodes', 'sw': 'Sukari ya Damu ya Chini Mara Nyingi'},
             'message': {
-                'en': f"You've had {patterns['low_readings_count']} low readings. This needs attention.",
-                'sw': f"Umekuwa na vipimo {patterns['low_readings_count']} vya chini. Hii inahitaji umakini."
-            },
-            'recommendations': {
-                'en': [
-                    'Always carry glucose tablets or sweets',
-                    "Don't skip meals",
-                    'Discuss medication timing with your doctor',
-                    'Check glucose before driving or exercising'
-                ],
-                'sw': [
-                    'Beba daima vidonge vya sukari au peremende',
-                    'Usiruke chakula',
-                    'Jadili muda wa dawa na daktari wako',
-                    'Angalia sukari kabla ya kuendesha gari au kufanya mazoezi'
-                ]
+                'en': f"{patterns['low_readings_count']} low readings detected. Needs attention.",
+                'sw': f"{patterns['low_readings_count']} vipimo vya chini. Inahitaji umakini."
             }
         })
     
     return alerts
 
+
 def get_meal_specific_predictions(recent_readings, meal_context, language='en'):
-    """Provide meal-specific predictions based on patterns"""
+    """Provide meal-specific predictions based on past meal contexts"""
     predictions = []
+    similar = [r for r in recent_readings if r.context == meal_context]
     
-    # Find similar meal contexts in history
-    similar_readings = [r for r in recent_readings if r.context == meal_context]
-    
-    if len(similar_readings) >= 3:
-        avg_response = statistics.mean([r.value for r in similar_readings])
-        
+    if len(similar) >= 3:
+        avg_response = statistics.mean([r.value for r in similar])
         if meal_context == 'pre_meal' and avg_response > 130:
             predictions.append({
                 'type': 'meal_prediction',
                 'message': {
-                    'en': f'Your pre-meal readings usually average {avg_response:.1f}. Consider a lighter meal today.',
-                    'sw': f'Vipimo vyako kabla ya chakula kawaida ni wastani wa {avg_response:.1f}. Fikiria chakula kizito kidogo leo.'
-                },
-                'food_suggestions': {
-                    'en': ['Choose sukuma wiki over ugali', 'Add protein like nyama choma', 'Drink water before eating'],
-                    'sw': ['Chagua sukuma wiki badala ya ugali', 'Ongeza protini kama nyama choma', 'Kunywa maji kabla ya kula']
+                    'en': f'Pre-meal avg {avg_response:.1f}. Consider a lighter meal.',
+                    'sw': f'Wastani wa kabla ya chakula {avg_response:.1f}. Fikiria chakula kizito kidogo.'
                 }
             })
-    
     return predictions
 
+
 def get_food_impact_prediction(food_name, user_patterns, language='en'):
-    """Predict how a specific Kenyan food might affect the user"""
+    """Predict how a Kenyan food might affect the user"""
     food_data = KENYAN_FOODS.get(food_name.lower().replace(' ', '_'))
     if not food_data:
         return None
     
-    # Base prediction on food's glucose impact and user's patterns
     glucose_impact = food_data['glucose_impact']
     user_avg = user_patterns.get('avg_post_meal', 150) if user_patterns else 150
     
     prediction = {
-        'food': food_data[f'name_{language}'] if f'name_{language}' in food_data else food_data['name_en'],
+        'food': food_data.get(f'name_{language}', food_data['name_en']),
         'glucose_impact': glucose_impact,
         'estimated_spike': 0,
         'recommendations': food_data['diabetes_tips'][language]
     }
     
-    # Estimate glucose spike based on food and user history
     if glucose_impact == 'very_high':
         prediction['estimated_spike'] = 80 + (user_avg - 150) * 0.3
     elif glucose_impact == 'high':
@@ -237,28 +179,18 @@ def get_food_impact_prediction(food_name, user_patterns, language='en'):
         prediction['estimated_spike'] = 30 + (user_avg - 150) * 0.1
     elif glucose_impact == 'low':
         prediction['estimated_spike'] = 15
-    else:  # none
-        prediction['estimated_spike'] = 0
     
     return prediction
 
 
-"""
-AI-powered glucose level prediction system
-for Kenyan foods and personalized health insights.
-"""
+# ---------------- AI Model Integration ----------------
 
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Tuple, Optional
+import numpy as np, pandas as pd, joblib, json
+from typing import List, Tuple, Optional
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-import joblib
-import json
-
 from kenyan_foods import get_kenyan_food_database, KenyanFood
 
 @dataclass
@@ -269,7 +201,7 @@ class GlucoseReading:
     food_consumed: Optional[List[str]] = None
     portion_sizes: Optional[List[float]] = None
     exercise_minutes: Optional[int] = None
-    stress_level: Optional[int] = None  # 1-10 scale
+    stress_level: Optional[int] = None
     sleep_hours: Optional[float] = None
 
 @dataclass
@@ -278,18 +210,49 @@ class UserProfile:
     age: int
     weight_kg: float
     height_cm: float
-    diabetes_type: Optional[str] = None  # Type 1, Type 2, Prediabetes, None
+    diabetes_type: Optional[str] = None
     medication: Optional[List[str]] = None
-    activity_level: str = "moderate"  # low, moderate, high
+    activity_level: str = "moderate"
     target_glucose_range: Tuple[float, float] = (80, 140)
 
 class GlucosePredictor:
-    """AI-powered glucose prediction system with Kenyan food integration"""
-    # (rest of class implementation unchanged from your gloria branch…)
+    """AI-powered glucose prediction system (RandomForest placeholder)"""
+    # (full class logic can be expanded here…)
 
-# Global instance
 glucose_predictor = GlucosePredictor()
 
 def get_glucose_predictor() -> GlucosePredictor:
-    """Get the global glucose predictor instance"""
     return glucose_predictor
+
+
+# ---------------- Nick's Simple REST API ----------------
+
+from flask import request
+from flask_restful import Resource
+
+def predict_glucose_next(recent_readings, carbs, gi):
+    """Naive heuristic prediction"""
+    baseline = sum(recent_readings[-5:]) / min(len(recent_readings), 5) if recent_readings else 110.0
+    gi_factor = (gi or 50) / 100.0
+    food_impact = carbs * gi_factor * 0.8
+    predicted = baseline + food_impact - 10
+    return max(60.0, min(predicted, 350.0))
+
+def risk_band(glucose):
+    if glucose < 70: return "low"
+    if glucose <= 140: return "target"
+    if glucose <= 200: return "elevated"
+    return "high"
+
+class GlucosePredict(Resource):
+    def post(self):
+        payload = request.get_json(force=True, silent=True) or {}
+        recent = payload.get("recent_readings") or []
+        carbs = float(payload.get("carbs") or 0)
+        gi = float(payload.get("gi") or 50)
+        try:
+            recent = [float(x) for x in recent]
+        except Exception:
+            return {"error": "recent_readings must be numeric"}, 400
+        predicted = predict_glucose_next(recent, carbs, gi)
+        return {"predicted_glucose": round(predicted, 1), "risk": risk_band(predicted)}, 200

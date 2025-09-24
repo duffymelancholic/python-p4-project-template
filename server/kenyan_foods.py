@@ -15,11 +15,11 @@ KENYAN_FOODS = {
         'name_sw': 'Ugali',
         'category': 'staple',
         'calories': 112,
-        'carbs': 24.0,  # High carb - will spike glucose
+        'carbs': 24.0,
         'fiber': 1.2,
         'protein': 2.4,
         'fat': 0.4,
-        'glycemic_index': 85,  # High GI
+        'glycemic_index': 85,
         'glucose_impact': 'high',
         'diabetes_tips': {
             'en': [
@@ -95,11 +95,6 @@ def get_food_recommendations(diabetes_type, language='en'):
 # CLASS-BASED MODEL
 # -----------------------
 
-"""
-Comprehensive database of traditional Kenyan foods
-with nutritional information and health insights for diabetes management.
-"""
-
 import json
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
@@ -157,7 +152,7 @@ class KenyanFoodDatabase:
         self.food_index = {food.id: food for food in self.foods}
         self.name_index = self._create_name_index()
     
-    # ... (full class definition continues unchanged) ...
+    # full implementation continues …
 
 # Global instance
 kenyan_food_db = KenyanFoodDatabase()
@@ -165,3 +160,44 @@ kenyan_food_db = KenyanFoodDatabase()
 def get_kenyan_food_database() -> KenyanFoodDatabase:
     """Get the global Kenyan food database instance"""
     return kenyan_food_db
+
+
+# -----------------------
+# NICK’S FLASK API LAYER
+# -----------------------
+
+from flask import request
+from flask_restful import Resource
+from models import Food as FoodModel
+
+class Foods(Resource):
+    def get(self):
+        search = request.args.get("search")
+        query = FoodModel.query
+        if search:
+            like = f"%{search}%"
+            query = query.filter(FoodModel.name.ilike(like))
+        foods = [
+            {
+                "id": f.id,
+                "name": f.name,
+                "carbs": f.carbs,
+                "gi": f.gi,
+                "serving_grams": f.serving_grams,
+            }
+            for f in query.order_by(FoodModel.name.asc()).all()
+        ]
+        return foods, 200
+
+class Food(Resource):
+    def get(self, food_id):
+        f = FoodModel.query.get(food_id)
+        if not f:
+            return {"error": "Food not found"}, 404
+        return {
+            "id": f.id,
+            "name": f.name,
+            "carbs": f.carbs,
+            "gi": f.gi,
+            "serving_grams": f.serving_grams,
+        }, 200
