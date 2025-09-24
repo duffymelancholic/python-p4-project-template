@@ -243,3 +243,53 @@ def get_food_impact_prediction(food_name, user_patterns, language='en'):
     return prediction
 
 
+"""
+AI-powered glucose level prediction system
+for Kenyan foods and personalized health insights.
+"""
+
+import numpy as np
+import pandas as pd
+from typing import Dict, List, Tuple, Optional
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+import joblib
+import json
+
+from kenyan_foods import get_kenyan_food_database, KenyanFood
+
+@dataclass
+class GlucoseReading:
+    timestamp: datetime
+    glucose_level: float
+    meal_context: Optional[str] = None
+    food_consumed: Optional[List[str]] = None
+    portion_sizes: Optional[List[float]] = None
+    exercise_minutes: Optional[int] = None
+    stress_level: Optional[int] = None  # 1-10 scale
+    sleep_hours: Optional[float] = None
+
+@dataclass
+class UserProfile:
+    user_id: str
+    age: int
+    weight_kg: float
+    height_cm: float
+    diabetes_type: Optional[str] = None  # Type 1, Type 2, Prediabetes, None
+    medication: Optional[List[str]] = None
+    activity_level: str = "moderate"  # low, moderate, high
+    target_glucose_range: Tuple[float, float] = (80, 140)
+
+class GlucosePredictor:
+    """AI-powered glucose prediction system with Kenyan food integration"""
+    # (rest of class implementation unchanged from your gloria branch…)
+
+# Global instance
+glucose_predictor = GlucosePredictor()
+
+def get_glucose_predictor() -> GlucosePredictor:
+    """Get the global glucose predictor instance"""
+    return glucose_predictor

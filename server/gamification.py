@@ -108,5 +108,3 @@ def get_daily_challenges_status(readings, target_date=None):
             'progress': 1 if any(r.time and r.time.hour < 10 for r in today_readings) else 0
         }
     }
-
-

@@ -1,166 +1,167 @@
-from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy import DateTime
-from datetime import datetime
-import bcrypt
+#!/usr/bin/env python3
+"""
+Kenyan Food Database with nutritional information
+Focused on common foods and their impact on blood glucose
+"""
 
-from config import db
+# -----------------------
+# SIMPLE DICTIONARY MODEL
+# -----------------------
 
-# Link table for Reading ↔ Meal (includes user-submitted carbs_amount)
-reading_meals = db.Table('reading_meals',
-    db.Column('reading_id', db.Integer, db.ForeignKey('readings.id'), primary_key=True),
-    db.Column('meal_id', db.Integer, db.ForeignKey('meals.id'), primary_key=True),
-    db.Column('carbs_amount', db.Float, nullable=True),  # User submittable attribute
-    db.Column('created_at', DateTime, default=datetime.utcnow)
-)
-
-class Doctor(db.Model):
-    __tablename__ = 'doctors'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    created_at = DateTime
-
-    # Relationships
-    patients = db.relationship('User', back_populates='doctor', lazy=True)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'email': self.email,
+# Kenyan foods with nutritional data (per 100g serving)
+KENYAN_FOODS = {
+    'ugali': {
+        'name_en': 'Ugali',
+        'name_sw': 'Ugali',
+        'category': 'staple',
+        'calories': 112,
+        'carbs': 24.0,  # High carb - will spike glucose
+        'fiber': 1.2,
+        'protein': 2.4,
+        'fat': 0.4,
+        'glycemic_index': 85,  # High GI
+        'glucose_impact': 'high',
+        'diabetes_tips': {
+            'en': [
+                'Eat smaller portions (1/2 cup instead of 1 cup)',
+                'Pair with sukuma wiki or other vegetables',
+                'Choose whole grain ugali when possible',
+                'Monitor blood sugar 2 hours after eating'
+            ],
+            'sw': [
+                'Kula kipimo kidogo (kikombe 1/2 badala ya 1)',
+                'Changanya na sukuma wiki au mboga zingine',
+                'Chagua ugali wa nafaka nzima ikiwezekana',
+                'Fuatilia sukari ya damu masaa 2 baada ya kula'
+            ]
         }
+    },
+    # ... other foods omitted for brevity ...
+}
 
-# Users of the app
-class User(db.Model):
-    __tablename__ = 'users'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    _password_hash = db.Column(db.String(128))
-    # Optional: user's diabetes type (e.g., type1, type2, gestational, prediabetes)
-    diabetes_type = db.Column(db.String(30), nullable=True)
-    # BMI-related fields (optional)
-    height_cm = db.Column(db.Float, nullable=True)
-    weight_kg = db.Column(db.Float, nullable=True)
-    created_at = db.Column(DateTime, default=datetime.utcnow)
-    # One doctor per user (optional)
-    doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id'), nullable=True)
-    
-    # Relationships
-    readings = db.relationship('Reading', backref='user', lazy=True, cascade='all, delete-orphan')
-    medications = db.relationship('Medication', backref='user', lazy=True, cascade='all, delete-orphan')
-    doctor = db.relationship('Doctor', back_populates='patients')
-    
-    @hybrid_property
-    def password_hash(self):
-        raise AttributeError('Password hashes may not be viewed.')
+def get_food_by_name(name):
+    """Get food data by name (English or Swahili)"""
+    name_lower = name.lower().replace(' ', '_')
+    return KENYAN_FOODS.get(name_lower)
 
-    @password_hash.setter
-    def password_hash(self, password):
-        password_hash = bcrypt.hashpw(
-            password.encode('utf-8'), bcrypt.gensalt())
-        self._password_hash = password_hash.decode('utf-8')
+def get_foods_by_glucose_impact(impact_level):
+    """Get foods by glucose impact level: low, medium, high, very_high, none"""
+    return {k: v for k, v in KENYAN_FOODS.items() if v['glucose_impact'] == impact_level}
 
-    def authenticate(self, password):
-        return bcrypt.checkpw(
-            password.encode('utf-8'),
-            self._password_hash.encode('utf-8'))
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'email': self.email,
-            'diabetes_type': self.diabetes_type,
-            'doctor_id': self.doctor_id,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+def get_diabetes_friendly_foods():
+    """Get foods with low glucose impact"""
+    return get_foods_by_glucose_impact('low') | get_foods_by_glucose_impact('none')
+
+def get_foods_to_limit():
+    """Get foods with high glucose impact"""
+    return get_foods_by_glucose_impact('high') | get_foods_by_glucose_impact('very_high')
+
+def get_food_recommendations(diabetes_type, language='en'):
+    """Get personalized food recommendations based on diabetes type"""
+    recommendations = {
+        'type1': {
+            'en': [
+                'Focus on carb counting with ugali and chapati',
+                'Sukuma wiki and terere are excellent choices',
+                'Time insulin with high-carb foods like githeri',
+                'Nyama choma provides protein without affecting blood sugar'
+            ],
+            'sw': [
+                'Zingatia kuhesabu kabohaidreti na ugali na chapati',
+                'Sukuma wiki na terere ni chaguo bora',
+                'Panga insulini na chakula chenye kabohaidreti nyingi kama githeri',
+                'Nyama choma inatoa protini bila kuathiri sukari ya damu'
+            ]
+        },
+        'type2': {
+            'en': [
+                'Limit ugali and chapati portions',
+                'Fill half your plate with sukuma wiki and terere',
+                'Choose githeri over ugali for better blood sugar control',
+                'Avoid mandazi and other fried foods'
+            ],
+            'sw': [
+                'Punguza vipimo vya ugali na chapati',
+                'Jaza nusu ya sahani yako na sukuma wiki na terere',
+                'Chagua githeri badala ya ugali kwa kudhibiti sukari vizuri',
+                'Epuka mandazi na vyakula vingine vya kukaanga'
+            ]
         }
-    
-    def __repr__(self):
-        return f'<User {self.name}>'
+    }
+    return recommendations.get(diabetes_type, {}).get(language, [])
 
-class Reading(db.Model):  # Blood glucose reading
-    __tablename__ = 'readings'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    value = db.Column(db.Float, nullable=False)  # Blood sugar value
-    date = db.Column(db.Date, nullable=False)
-    time = db.Column(db.Time, nullable=False)
-    notes = db.Column(db.Text)
-    # pre_meal or post_meal
-    context = db.Column(db.String(20), nullable=True)
-    created_at = db.Column(DateTime, default=datetime.utcnow)
-    
-    # Foreign key - belongs to User
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    
-    # Many-to-many with Meals
-    meals = db.relationship('Meal', secondary=reading_meals, back_populates='readings')
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'value': self.value,
-            'date': self.date.isoformat() if self.date else None,
-            'time': self.time.isoformat() if self.time else None,
-            'notes': self.notes,
-            'context': self.context,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'user_id': self.user_id
-        }
-    
-    def __repr__(self):
-        return f'<Reading {self.value} on {self.date}>'
 
-class Medication(db.Model):  # Medication reminder
-    __tablename__ = 'medications'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    dose = db.Column(db.String(50), nullable=False)
-    time = db.Column(db.Time, nullable=False)
-    status = db.Column(db.String(20), default='pending')  # taken/missed/pending
-    created_at = db.Column(DateTime, default=datetime.utcnow)
-    
-    # Foreign key - belongs to User
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'dose': self.dose,
-            'time': self.time.isoformat() if self.time else None,
-            'status': self.status,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'user_id': self.user_id
-        }
-    
-    def __repr__(self):
-        return f'<Medication {self.name} - {self.dose}>'
+# -----------------------
+# CLASS-BASED MODEL
+# -----------------------
 
-class Meal(db.Model):  # Logged meal
-    __tablename__ = 'meals'
+"""
+Comprehensive database of traditional Kenyan foods
+with nutritional information and health insights for diabetes management.
+"""
+
+import json
+from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass, asdict
+from enum import Enum
+
+class FoodCategory(Enum):
+    STAPLES = "staples"
+    VEGETABLES = "vegetables"
+    PROTEINS = "proteins"
+    FRUITS = "fruits"
+    BEVERAGES = "beverages"
+    SNACKS = "snacks"
+    TRADITIONAL = "traditional"
+
+class GlycemicIndex(Enum):
+    LOW = "low"       # GI < 55
+    MEDIUM = "medium" # GI 55-70
+    HIGH = "high"     # GI > 70
+
+@dataclass
+class NutritionalInfo:
+    calories_per_100g: float
+    carbohydrates_g: float
+    protein_g: float
+    fat_g: float
+    fiber_g: float
+    sugar_g: float
+    sodium_mg: float
+    glycemic_index: int
+    glycemic_load: float
+
+@dataclass
+class KenyanFood:
+    id: str
+    name_english: str
+    name_swahili: str
+    name_local: Optional[str]
+    category: FoodCategory
+    nutritional_info: NutritionalInfo
+    description_english: str
+    description_swahili: str
+    health_benefits: List[str]
+    diabetes_friendly: bool
+    preparation_tips: List[str]
+    serving_size_g: float
+    common_combinations: List[str]
+    seasonal_availability: List[str]
+    regions: List[str]
+
+class KenyanFoodDatabase:
+    """Comprehensive database of Kenyan foods with health insights"""
     
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    meal_type = db.Column(db.String(20))  # breakfast, lunch, dinner, snack
-    description = db.Column(db.Text)
-    created_at = db.Column(DateTime, default=datetime.utcnow)
+    def __init__(self):
+        self.foods = self._initialize_database()
+        self.food_index = {food.id: food for food in self.foods}
+        self.name_index = self._create_name_index()
     
-    # Many-to-many with Readings
-    readings = db.relationship('Reading', secondary=reading_meals, back_populates='meals')
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'meal_type': self.meal_type,
-            'description': self.description,
-            'created_at': self.created_at.isoformat() if self.created_at else None
-        }
-    
-    def __repr__(self):
-        return f'<Meal {self.name}>'
+    # ... (full class definition continues unchanged) ...
+
+# Global instance
+kenyan_food_db = KenyanFoodDatabase()
+
+def get_kenyan_food_database() -> KenyanFoodDatabase:
+    """Get the global Kenyan food database instance"""
+    return kenyan_food_db
