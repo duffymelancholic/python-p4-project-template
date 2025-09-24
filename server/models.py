@@ -1,5 +1,6 @@
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import DateTime
+from sqlalchemy_serializer import SerializerMixin
 from datetime import datetime
 import bcrypt
 
@@ -19,7 +20,7 @@ class Doctor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    created_at = DateTime
+    created_at = db.Column(DateTime, default=datetime.utcnow)
 
     # Relationships
     patients = db.relationship('User', back_populates='doctor', lazy=True)
@@ -164,3 +165,30 @@ class Meal(db.Model):  # Logged meal
     
     def __repr__(self):
         return f'<Meal {self.name}>'
+
+# Food model for Kenyan foods database (Nick's contribution)
+class Food(db.Model, SerializerMixin):
+    __tablename__ = 'foods'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False, unique=True)
+    carbs = db.Column(db.Integer, nullable=False, default=0)
+    gi = db.Column(db.Integer, nullable=False, default=0)
+    serving_grams = db.Column(db.Integer, nullable=False, default=0)
+
+    serialize_rules = ('-metadata',)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'carbs': self.carbs,
+            'gi': self.gi,
+            'serving_grams': self.serving_grams
+        }
+    
+    def __repr__(self):
+        return f'<Food {self.name}>'
+
+# Export all models for easy importing
+__all__ = ['User', 'Reading', 'Medication', 'Meal', 'Doctor', 'Food', 'reading_meals']

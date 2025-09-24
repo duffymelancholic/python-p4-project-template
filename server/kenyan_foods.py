@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """
 Kenyan Food Database with nutritional information
-Focused on common foods and their impact on blood glucose
+Combines comprehensive food data with API endpoints
 """
 
-# Kenyan foods with nutritional data (per 100g serving)
+from flask import request
+from flask_restful import Resource
+from sqlalchemy import or_
+
+# Kenyan foods with nutritional data (per 100g serving) - Mohamed's comprehensive database
 KENYAN_FOODS = {
     'ugali': {
         'name_en': 'Ugali',
@@ -223,6 +227,7 @@ KENYAN_FOODS = {
     }
 }
 
+# Helper functions for food database
 def get_food_by_name(name):
     """Get food data by name (English or Swahili)"""
     name_lower = name.lower().replace(' ', '_')
@@ -275,4 +280,43 @@ def get_food_recommendations(diabetes_type, language='en'):
     
     return recommendations.get(diabetes_type, {}).get(language, [])
 
+# API Resources for database foods (Nick's contribution)
+class Foods(Resource):
+    def get(self):
+        """Get all foods from database with optional search"""
+        # Import here to avoid circular imports
+        from models import Food as FoodModel
+        
+        search = request.args.get("search")
+        query = FoodModel.query
+        if search:
+            like = f"%{search}%"
+            query = query.filter(FoodModel.name.ilike(like))
+        foods = [
+            {
+                "id": f.id,
+                "name": f.name,
+                "carbs": f.carbs,
+                "gi": f.gi,
+                "serving_grams": f.serving_grams,
+            }
+            for f in query.order_by(FoodModel.name.asc()).all()
+        ]
+        return foods, 200
 
+class Food(Resource):
+    def get(self, food_id):
+        """Get specific food by ID from database"""
+        # Import here to avoid circular imports
+        from models import Food as FoodModel
+        
+        f = FoodModel.query.get(food_id)
+        if not f:
+            return {"error": "Food not found"}, 404
+        return {
+            "id": f.id,
+            "name": f.name,
+            "carbs": f.carbs,
+            "gi": f.gi,
+            "serving_grams": f.serving_grams,
+        }, 200

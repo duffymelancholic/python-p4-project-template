@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """
 Glucose Prediction and Alert System
-Analyzes user patterns to provide predictive alerts
+Combines advanced pattern analysis with simple prediction API
 """
 
 from datetime import datetime, timedelta
 from collections import defaultdict
 import statistics
-from kenyan_foods import KENYAN_FOODS
+from flask import request
+from flask_restful import Resource
 
+# Advanced pattern analysis system (Mohamed's contribution)
 def analyze_user_patterns(readings):
     """Analyze user's glucose patterns from reading history"""
     if len(readings) < 3:
@@ -213,33 +215,74 @@ def get_meal_specific_predictions(recent_readings, meal_context, language='en'):
 
 def get_food_impact_prediction(food_name, user_patterns, language='en'):
     """Predict how a specific Kenyan food might affect the user"""
-    food_data = KENYAN_FOODS.get(food_name.lower().replace(' ', '_'))
-    if not food_data:
+    # Import here to avoid circular imports
+    try:
+        from kenyan_foods import KENYAN_FOODS
+        food_data = KENYAN_FOODS.get(food_name.lower().replace(' ', '_'))
+        if not food_data:
+            return None
+        
+        # Base prediction on food's glucose impact and user's patterns
+        glucose_impact = food_data['glucose_impact']
+        user_avg = user_patterns.get('avg_post_meal', 150) if user_patterns else 150
+        
+        prediction = {
+            'food': food_data[f'name_{language}'] if f'name_{language}' in food_data else food_data['name_en'],
+            'glucose_impact': glucose_impact,
+            'estimated_spike': 0,
+            'recommendations': food_data['diabetes_tips'][language]
+        }
+        
+        # Estimate glucose spike based on food and user history
+        if glucose_impact == 'very_high':
+            prediction['estimated_spike'] = 80 + (user_avg - 150) * 0.3
+        elif glucose_impact == 'high':
+            prediction['estimated_spike'] = 50 + (user_avg - 150) * 0.2
+        elif glucose_impact == 'medium':
+            prediction['estimated_spike'] = 30 + (user_avg - 150) * 0.1
+        elif glucose_impact == 'low':
+            prediction['estimated_spike'] = 15
+        else:  # none
+            prediction['estimated_spike'] = 0
+        
+        return prediction
+    except ImportError:
         return None
-    
-    # Base prediction on food's glucose impact and user's patterns
-    glucose_impact = food_data['glucose_impact']
-    user_avg = user_patterns.get('avg_post_meal', 150) if user_patterns else 150
-    
-    prediction = {
-        'food': food_data[f'name_{language}'] if f'name_{language}' in food_data else food_data['name_en'],
-        'glucose_impact': glucose_impact,
-        'estimated_spike': 0,
-        'recommendations': food_data['diabetes_tips'][language]
-    }
-    
-    # Estimate glucose spike based on food and user history
-    if glucose_impact == 'very_high':
-        prediction['estimated_spike'] = 80 + (user_avg - 150) * 0.3
-    elif glucose_impact == 'high':
-        prediction['estimated_spike'] = 50 + (user_avg - 150) * 0.2
-    elif glucose_impact == 'medium':
-        prediction['estimated_spike'] = 30 + (user_avg - 150) * 0.1
-    elif glucose_impact == 'low':
-        prediction['estimated_spike'] = 15
-    else:  # none
-        prediction['estimated_spike'] = 0
-    
-    return prediction
 
+# Simple glucose prediction API (Nick's contribution)
+def simple_predict_glucose_next(recent_readings, carbs, gi):
+    """Simple heuristic glucose predictor for API"""
+    if not recent_readings:
+        baseline = 110.0
+    else:
+        baseline = sum(recent_readings[-5:]) / min(len(recent_readings), 5)
+    # crude estimate: impact proportional to carbs * gi factor
+    gi_factor = (gi or 50) / 100.0
+    food_impact = carbs * gi_factor * 0.8
+    predicted = baseline + food_impact - 10  # assume some insulin or natural decay
+    return max(60.0, min(predicted, 350.0))
 
+def risk_band(glucose):
+    """Categorize glucose level into risk bands"""
+    if glucose < 70:
+        return "low"
+    if glucose <= 140:
+        return "target"
+    if glucose <= 200:
+        return "elevated"
+    return "high"
+
+# API Resource for simple glucose prediction
+class GlucosePredict(Resource):
+    def post(self):
+        """Simple glucose prediction endpoint"""
+        payload = request.get_json(force=True, silent=True) or {}
+        recent = payload.get("recent_readings") or []
+        carbs = float(payload.get("carbs") or 0)
+        gi = float(payload.get("gi") or 50)
+        try:
+            recent = [float(x) for x in recent]
+        except Exception:
+            return {"error": "recent_readings must be numeric"}, 400
+        predicted = simple_predict_glucose_next(recent, carbs, gi)
+        return {"predicted_glucose": round(predicted, 1), "risk": risk_band(predicted)}, 200

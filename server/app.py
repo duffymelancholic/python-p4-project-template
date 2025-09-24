@@ -10,11 +10,11 @@ from datetime import datetime
 
 # Local imports
 from config import app, db, api
-from models import User, Reading, Medication, Meal, Doctor, reading_meals
+from models import User, Reading, Medication, Meal, Doctor, Food, reading_meals
 from schemas import UserSchema, ReadingSchema, MedicationSchema, MealSchema, DoctorSchema
-from kenyan_foods import KENYAN_FOODS, get_food_recommendations, get_diabetes_friendly_foods, get_foods_to_limit
-from glucose_predictor import analyze_user_patterns, generate_predictive_alerts, get_meal_specific_predictions, get_food_impact_prediction
-from gamification import BADGES, DAILY_CHALLENGES, get_user_progress, check_badges, get_daily_challenges_status
+from kenyan_foods import KENYAN_FOODS, get_food_recommendations, get_diabetes_friendly_foods, get_foods_to_limit, Foods, Food
+from glucose_predictor import analyze_user_patterns, generate_predictive_alerts, get_meal_specific_predictions, get_food_impact_prediction, GlucosePredict
+from gamification import BADGES, DAILY_CHALLENGES, get_user_progress, check_badges, get_daily_challenges_status, Points, Badges
 
 
 # ---------------- Authentication ----------------
@@ -77,6 +77,12 @@ class CheckSession(Resource):
 def index():
     return '<h1>Diabetes Management API</h1>'
 
+# Register API resources
+api.add_resource(Foods, '/foods')
+api.add_resource(Food, '/foods/<int:food_id>')
+api.add_resource(GlucosePredict, '/predict')
+api.add_resource(Points, '/users/<user_id>/points')
+api.add_resource(Badges, '/users/<user_id>/badges')
 
 # ---------------- Helpers (dates/times/validation) ----------------
 
