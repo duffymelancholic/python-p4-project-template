@@ -16,6 +16,7 @@ bcrypt = "==4.3.0"
 flask-marshmallow = "==1.2.1"
 marshmallow = "==3.22.0"
 marshmallow-sqlalchemy = "==1.1.1"
+sqlalchemy-serializer = "*"
 
 [requires]
 python_full_version = "3.8.13"
